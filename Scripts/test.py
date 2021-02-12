@@ -1,0 +1,1 @@
+print ("Read by the name of Allah, who is created you")
