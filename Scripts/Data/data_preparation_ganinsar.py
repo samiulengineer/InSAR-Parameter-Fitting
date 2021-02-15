@@ -10,7 +10,7 @@ parser.add_argument('--mr', type=str, default='def_fit_cmpy')
 parser.add_argument('--out_dir', type=str)
 
 args = parser.parse_args()
-
+#change
 def demo():
     mr_path = '{}/{}'.format(args.data_dir, args.mr)
     he_path = '{}/{}'.format(args.data_dir, args.he)
