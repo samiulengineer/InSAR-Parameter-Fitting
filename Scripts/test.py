@@ -1,1 +1,1 @@
-print ("Read by the name of Allah, who is created you")
+print ("ghgRead by the name of Allah, who is created you")
