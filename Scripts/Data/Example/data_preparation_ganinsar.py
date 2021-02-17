@@ -1,7 +1,7 @@
 import numpy as np
 import argparse
-# from ..utils.utils import readFloat
 import matplotlib.pyplot as plt
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--data_dir', type=str, default='/mnt/hdd1/alvinsun/3vG-Parameter-Fitting-Data/miami.tsx.sm_dsc.740.304.1500.1500/fit_hr/')
