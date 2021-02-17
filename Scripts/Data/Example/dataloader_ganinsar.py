@@ -1,9 +1,10 @@
 import numpy as np
 import os
+import torch
+import glob
+import time
 import matplotlib.pyplot as plt
-import numpy as np
 from torch.utils.data import Dataset, DataLoader
-import glob 
 
 def readShortComplex(fileName, width=1):
     return np.fromfile(fileName, '>i2').astype(np.float).view(np.complex).reshape(-1, width)
@@ -34,6 +35,8 @@ def writeFloat(fileName, data):
     data.astype('>f4').tofile(out_file)
     out_file.close()
 
+
+# Patch-wise reading
 def readFloatComplexRandomPathces(fileName, width=1, num_sample=1, patch_size=1, rows=None, cols=None, height=None):
     with open(fileName, "rb") as fin:
         if rows is None:
@@ -51,6 +54,7 @@ def readFloatComplexRandomPathces(fileName, width=1, num_sample=1, patch_size=1,
                 img.append(np.frombuffer(fin.read(8 * patch_size), dtype=">c8").astype(np.complex))
             patches.append(np.reshape(img, [patch_size, patch_size]))
     return patches, rows, cols, height
+
 
 def readShortFloatComplexRandomPathces(fileName, width=1, num_sample=1, patch_size=1, rows=None, cols=None, height=None):
     with open(fileName, "rb") as fin:
@@ -70,7 +74,9 @@ def readShortFloatComplexRandomPathces(fileName, width=1, num_sample=1, patch_si
                 fin.seek(4 * (width * (row + p_row) + col))
                 img.append(np.frombuffer(fin.read(4 * patch_size), dtype=">i2").astype(np.float).view(np.complex))
             patches.append(np.reshape(img, [patch_size, patch_size]))
+
     return patches, rows, cols, height
+
 
 def readFloatRandomPathces(fileName, width=1, num_sample=1, patch_size=1, rows=None, cols=None, height=None):
     with open(fileName, "rb") as fin:
@@ -90,61 +96,142 @@ def readFloatRandomPathces(fileName, width=1, num_sample=1, patch_size=1, rows=N
             patches.append(np.reshape(img, [patch_size, patch_size]))
     return patches, rows, cols, height
 
-def ap2one(ifg):
-    ifg_phase = np.angle(ifg)
-    ifg = 1. * np.exp(1j * ifg_phase)
-    return ifg, np.real(ifg), np.imag(ifg)
 
-class SimInSARDB(Dataset):
-    def __init__(self, patch_size, sim_db_root_dir, fake_length, db_width):
-        self.all_noisy_ifg_paths = glob.glob('{}/**/*.noisy'.format(sim_db_root_dir), recursive=True)
-        self.all_noisy_ifg_paths.sort()
-        self.length = fake_length
+def worker_init_fn(worker_id):
+    np.random.seed(np.random.get_state()[1][0] + worker_id)
+
+class data_prefetcher():
+    def __init__(self, loader):
+        self.loader = iter(loader)
+        self.stream = torch.cuda.Stream()
+        self.preload()
+
+    def preload(self):
+        try:
+            self.next_input, self.next_target = next(self.loader)
+        except StopIteration:
+            self.next_input = None
+            self.next_target = None
+            return
+        with torch.cuda.stream(self.stream):
+            self.next_input = self.next_input.cuda(non_blocking=True)
+            self.next_target = self.next_target.cuda(non_blocking=True)
+            self.next_input = self.next_input.float()
+            self.next_input = self.next_input.sub_(self.mean).div_(self.std)
+
+    def next(self):
+        torch.cuda.current_stream().wait_stream(self.stream)
+        input = self.next_input
+        target = self.next_target
+        if input is not None:
+            input.record_stream(torch.cuda.current_stream())
+        if target is not None:
+            target.record_stream(torch.cuda.current_stream())
+        self.preload()
+        return input, target
+
+
+
+class data_prefetcher():
+    def __init__(self, loader):
+        self.loader = iter(loader)
+        self.stream = torch.cuda.Stream()
+        self.preload()
+
+    def preload(self):
+        try:
+            self.next_input = next(self.loader)
+        except StopIteration:
+            return
+        with torch.cuda.stream(self.stream):
+            self.next_input = self.next_input.cuda(non_blocking=True)
+            self.next_input = self.next_input.float()
+
+    def next(self):
+        torch.cuda.current_stream().wait_stream(self.stream)
+        input = self.next_input
+        if input is not None:
+            input.record_stream(torch.cuda.current_stream())
+        self.preload()
+        return input 
+
+
+# Single channel reading
+class ParameterDataset(Dataset):
+
+    def __init__(self, data_paths, patch_size, n_patch_per_sample, data_width):
+        self.data_paths = data_paths
         self.patch_size = patch_size
-        self.db_width = db_width
+        self.n_patch_per_sample = n_patch_per_sample
+        self.length = len(data_paths) * self.n_patch_per_sample
+        self.data_width = data_width
 
     def __len__(self):
         return self.length
 
-    def __getitem__(self, index):
-        idx = index % len(self.all_noisy_ifg_paths)
-        
-        noisy_path, clean_path, slc1_path, slc2_path, coh_path = self.parse_path(self.all_noisy_ifg_paths[idx])
+    def __getitem__(self, idx):
+        file_idx = int(idx / self.n_patch_per_sample)
+        file_path = self.data_paths[file_idx]
+        [ps, _, _, _] = readFloatRandomPathces(file_path, width = self.data_width, num_sample=1, patch_size=self.patch_size, height=self.data_width)
+        ps = ps[0]
+        # ps = (ps-ps.min())/(ps.max()-ps.min())
+        return np.expand_dims(ps, 0)
 
-        ifg, rs, cs, h = readFloatComplexRandomPathces(noisy_path, width=self.db_width, patch_size=self.patch_size, num_sample=1)
-        slc1, rs, cs, h = readFloatComplexRandomPathces(slc1_path, width=self.db_width, patch_size=self.patch_size, num_sample=1, rows=rs, cols=cs, height=h)
-        slc2, rs, cs, h = readFloatComplexRandomPathces(slc2_path, width=self.db_width, patch_size=self.patch_size, num_sample=1, rows=rs, cols=cs, height=h)
-        filt, rs, cs, h = readFloatComplexRandomPathces(clean_path, width=self.db_width, patch_size=self.patch_size, num_sample=1, rows=rs, cols=cs, height=h)
-        coh, rs, cs, h = readFloatRandomPathces(coh_path, width=self.db_width, patch_size=self.patch_size, num_sample=1, rows=rs, cols=cs, height=h)
-        ifg, ifg_real, ifg_imag = ap2one(np.asarray(ifg))
+# Double channel reading
+class ParameterDatasetCombineMandH(Dataset):
 
-        filt_ifg, clean_real, clean_imag = ap2one(np.asarray(filt))
+    def __init__(self, data_paths, patch_size, n_patch_per_sample, data_width):
+        self.data_paths = data_paths
+        self.patch_size = patch_size
+        self.n_patch_per_sample = n_patch_per_sample
+        self.length = len(data_paths) * self.n_patch_per_sample
+        self.data_width = data_width
 
-        return {'ifg_real': ifg_real.astype(np.float32),
-                'ifg_imag': ifg_imag.astype(np.float32),
-                'slc1': np.abs(np.asarray(slc1)).astype(np.float32), 
-                'slc2': np.abs(np.asarray(slc2)).astype(np.float32),
-                'clean_real': clean_real.astype(np.float32),
-                'clean_imag': clean_imag.astype(np.float32),
-                'coh': np.asarray(coh).astype(np.float32)}
+    def __len__(self):
+        return self.length
 
-    def parse_path(self, noisy_path):
-        noisy_path_tokens = noisy_path.split('/')
-        pair_name = noisy_path_tokens[-1].split('.')[0]
+    def __getitem__(self, idx):
+        file_idx = int(idx / self.n_patch_per_sample)
+        file_path_mr = self.data_paths[file_idx]
+        file_path_he = file_path_mr.replace('/def_fit_cmpy', '/hgt_fit_m')
+        [ms, rs, cs, _] = readFloatRandomPathces(file_path_mr, width = self.data_width, num_sample=1, patch_size=self.patch_size, height=self.data_width)
+        [hs, _, _, _] = readFloatRandomPathces(file_path_he, width = self.data_width, num_sample=1, patch_size=self.patch_size, height=self.data_width, rows=rs, cols=cs)
+        ps = np.concatenate([np.expand_dims(ms[0],0), np.expand_dims(hs[0],0)])
+        # ps = (ps-ps.min())/(ps.max()-ps.min())
+        return ps
 
-        clean_path = "/{}/{}.filt".format(os.path.join(*(noisy_path_tokens[:-1])), pair_name)
-        coh_path = clean_path + '.coh'
+class ParameterDatasetWrap(Dataset):
 
-        slc1_name = pair_name.split('_')[0]
-        slc2_name = pair_name.split('_')[1]
+    def __init__(self, data_paths, patch_size, n_patch_per_sample, data_width):
+        self.data_paths = data_paths
+        self.patch_size = patch_size
+        self.n_patch_per_sample = n_patch_per_sample
+        self.length = len(data_paths) * self.n_patch_per_sample
+        self.data_width = data_width
 
-        slc1_path = "/{}/{}.rslc.bar.norm".format(os.path.join(*(noisy_path_tokens[:-1])), slc1_name)
-        slc2_path = "/{}/{}.rslc.bar.norm".format(os.path.join(*(noisy_path_tokens[:-1])), slc2_name)
+    def __len__(self):
+        return self.length
 
-        assert os.path.isfile(slc1_path), "slc1 not exisit"
-        assert os.path.isfile(slc2_path), "slc1 not exisit"
-        assert os.path.isfile(noisy_path), "noisy not exisit"
-        assert os.path.isfile(clean_path), "clean not exisit"
-        assert os.path.isfile(coh_path), "coh not exisit"
+    def __getitem__(self, idx):
+        file_idx = int(idx / self.n_patch_per_sample)
+        file_path = self.data_paths[file_idx]
+        [ps, _, _, _] = readFloatRandomPathces(file_path, width = self.data_width, num_sample=1, patch_size=self.patch_size, height=self.data_width)
+        ps = ps[0]
+        # ps = (ps-ps.min())/(ps.max()-ps.min())
+        t = (abs(ps)/(ps+1e-10))*(abs(ps)%10)/10
+        t = np.expand_dims(t, 0)
+        t2 = (abs(ps)/(ps+1e-10))*(abs(ps)//10)
+        t2 = np.expand_dims(t2, 0)
+        return np.concatenate([t, t2], 0)
 
-        return noisy_path, clean_path, slc1_path, slc2_path, coh_path
+
+if __name__ == "__main__":
+
+    all_paths = glob.glob('/mnt/hdd1/alvinsun/3vG-Parameter-Fitting-Data/*/fit_hr/def_fit_cmpy')
+
+    # d = ParameterDataset(all_paths, 256, 100, 1500)
+    d = ParameterDatasetCombineMandH(all_paths, 256, 100, 1500)
+
+    dataloader = DataLoader(d, batch_size=32,
+                        shuffle=True, num_workers=4, worker_init_fn=worker_init_fn, drop_last=True)
+

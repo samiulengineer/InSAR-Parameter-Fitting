@@ -1,6 +1,6 @@
 import numpy as np
 import argparse
-from ..utils.utils import readFloat
+# from ..utils.utils import readFloat
 import matplotlib.pyplot as plt
 parser = argparse.ArgumentParser()
 
@@ -10,6 +10,11 @@ parser.add_argument('--mr', type=str, default='def_fit_cmpy')
 parser.add_argument('--out_dir', type=str)
 
 args = parser.parse_args()
+
+
+def readFloat(fileName, width=1):
+    return np.fromfile(fileName, '>f4').astype(np.float).reshape(-1, width)
+
 #change
 def demo():
     mr_path = '{}/{}'.format(args.data_dir, args.mr)
@@ -53,5 +58,5 @@ def demo():
     fig.show()
     input()
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     
