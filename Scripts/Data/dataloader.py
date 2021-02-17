@@ -79,9 +79,10 @@ class SpatialTemporalDataset(Dataset):
     def __getitem__(self, idx):
         coord = self.all_sample_coords[idx]
 
+        #motion_rate and height_error
         mr_target = data_reader.readBin(self.ref_mr_path, self.width, 'float', crop=(coord[0], coord[1], self.patch_size, self.patch_size))
         he_target = data_reader.readBin(self.ref_he_path, self.width, 'float', crop=(coord[0], coord[1], self.patch_size, self.patch_size))
-
+    
         filt_input = np.zeros([self.stack_size, self.patch_size, self.patch_size])    # [N, h ,w] for a single training sample, 
         coh_input = np.zeros([self.stack_size, self.patch_size, self.patch_size])    # [N, h ,w] for a single training sample
 
