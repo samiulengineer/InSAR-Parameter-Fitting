@@ -1,14 +1,13 @@
 import torch
+import glob
+import numpy as np
+import pytorch_lightning as pl
+
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
-# from torch.utils.data import random_split
-# from torchvision.datasets import MNIST
-# from torchvision import transforms
-import pytorch_lightning as pl
 from Scripts.Data.dataloader import SpatialTemporalDataset
-import glob
-import numpy as np
+
  
 def worker_init_fn(worker_id):
     np.random.seed(np.random.get_state()[1][0] + worker_id)
