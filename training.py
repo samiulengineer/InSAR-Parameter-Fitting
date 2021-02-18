@@ -33,7 +33,7 @@ class LitAutoEncoder(pl.LightningModule):
         return optimizer
 
     def training_step(self, train_batch, batch_idx):
-        inputs = train_batch.float()
+        inputs = train_batch()
         out = self.forward(inputs)
         loss = F.mse_loss(inputs, out)
         self.log('train_loss', loss.item())
