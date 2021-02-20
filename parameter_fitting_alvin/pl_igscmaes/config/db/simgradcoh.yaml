@@ -1,0 +1,10 @@
+# @package _group_
+_target_: pl_igscmaes.data.dataset.SimFittingDataset
+name: gradcoh
+bperp_dir: '/quobyte/dev_machine_learning/bagdad.tsx.sm_dsc.1700.400.1500.1500/ifg_hr/'
+bperp_ext: '.bperp'
+conv1: -0.0110745533168
+conv2: -0.00134047881374
+width: 1500 
+col: 0
+sim_signals_path: './sim_signals.npy'
