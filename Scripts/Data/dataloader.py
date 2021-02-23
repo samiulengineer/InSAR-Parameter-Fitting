@@ -53,7 +53,11 @@ class SpatialTemporalDataset(Dataset):
         self.patch_size = patch_size
         self.stride = stride
 
+        # log.info('stack size {}'.format(self.stack_size))
+
         self.stack_size = len(self.filt_paths)
+
+        # log.info('stack size {}'.format(self.stack_size))
 
         self.ddays = np.zeros(self.stack_size)
         self.bperps = np.zeros(self.stack_size)
@@ -105,6 +109,11 @@ class SpatialTemporalDataset(Dataset):
         }
 
 
+
+
+
+
+
 if __name__ == "__main__":
 
     sample_filt_dir = '/mnt/hdd1/3vG_data/3vg_parameter_fitting_data/miami.tsx.sm_dsc.740.304.1500.1500/ifg_hr/'
@@ -154,3 +163,24 @@ if __name__ == "__main__":
             break
     fig.tight_layout()
     plt.show()
+
+
+
+    # def wrap(phase):
+    #     return np.angle(np.exp(1j * phase))
+
+
+    # def recon_phase(self, mr, he, conv1, conv2, ddays):
+    #     return self.ddays * self.conv1 * mr + self.bperps * self.conv2 * he
+
+
+    # recon_ifg = recon_phase(ref_mr_path, ref_he_path, sample_conv1, sample_conv2, 'ddays')
+    # print (recon_ifg)
+
+# recon(mr,he,conv1,conv2,ddays)
+
+# recon_ifg = recon(mr,he,conv1,conv2,ddays)
+
+# filter_ifg
+
+    # np.angle(1*np.exp(filter_ifg_phase-wrap(recon_ifg_ifg)))
