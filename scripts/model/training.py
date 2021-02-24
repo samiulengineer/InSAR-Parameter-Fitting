@@ -2,11 +2,10 @@ import torch
 import glob
 import numpy as np
 import pytorch_lightning as pl
-
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
-from Scripts.Data.dataloader import SpatialTemporalDataset
+from scripts.data.dataloader import SpatialTemporalDataset
 
  
 def worker_init_fn(worker_id):
