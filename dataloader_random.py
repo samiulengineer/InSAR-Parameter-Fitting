@@ -133,7 +133,7 @@ class SpatialTemporalDataset(Dataset): # inherit the dataset class
         self.unwrap_recon_phase, self.ddays, self.bperps, self.conv1, self.conv2 = gen_sim_3d(mr_target, he_target, self.stack_size)
         # self.unwrap_recon_phase, self.ddays, self.bperps, self.conv1, self.conv2 = gen_sim_3d(mr, he,self.stack_size)
 
-        wrap_recon_phase = wrap(self.unwrap_recon_phase)
+        wrap_recon_phase = wrap(self.unwrap_recon_phase).reshape(self.stack_size,self.patch_size, self.patch_size)
 
         for i in range(self.stack_size):
             # !! here is an example that only uses phase information 
@@ -191,6 +191,7 @@ if __name__ == "__main__":
     for batch_idx, batch in enumerate(random_dataloader):
         print('Batch Index = {}'.format(batch_idx))
         print('Input Shape = {}'.format(batch['input'].shape))
+        # print('Input Shape = {}'.format(batch['input']['0]))
         print('Coh Shape = {}'.format(batch['coh'].shape))
         print('mr Shape = {}'.format(batch['mr'].shape))
         # print(batch['mr']) # to check the output of mr 
@@ -202,7 +203,7 @@ if __name__ == "__main__":
         print('Wrap recon phase Shape = {}'.format(batch['wrap_recon_phase'].shape))
 
 
-        # print(np.angle(1*np.exp(batch['input'][0][0]-batch['wrap_recon_phase'][0][0])))
+        print(np.angle(1*np.exp(batch['input'][0][0][0]-batch['wrap_recon_phase'][0][0][0])))
 
         # print(np.angle(1*np.exp(batch['input'][0][0][0]-wrap(batch['unwrap_recon_phase'][0][0][0]))))
         # for i in range(len(batch['input'])):
@@ -243,7 +244,7 @@ if __name__ == "__main__":
     # fig, axs = plt.subplots(1,4, figsize=(9,2))
     # input_shape = batch['wrap_recon_phase'][0].shape 
     # for i in range(input_shape[2]): # size of stack
-    #     im = axs[i].imshow(batch['wrap_recon_phase'][:,:,i]), cmap='jet', vmin=-np.pi, vmax=np.pi)
+    #     im = axs[i].imshow(batch['wrap_recon_phase'][:,:,i]), cmap='jet', vmin=-np.pi, vmax=np.pi
     #     fig.colorbar(im, ax=axs[i], shrink=0.6, pad=0.05, fraction=0.046) 
     #     if i == 3: 
     #         break
