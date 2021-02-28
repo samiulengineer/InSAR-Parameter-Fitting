@@ -5,23 +5,28 @@ import numpy as np
 import logging
 import glob
 import tqdm 
+import logging
 from datetime import datetime
 import re #for finding pattern /this module let you check if a particular string matches a given regular expression (or if a given regular expression matches a particular string, which comes down to the same thing).
 
-# log = logging.getLogger(__name__)
 
+log = logging.getLogger(__name__)
+    # ? find out why do we use logging and use log.info() inside the code 
+ 
 def get_delta_days(date_string): 
-    '''this function find out the basic def of date'''
-    date_format = "%Y%m%d"#This is the main formet the date represented in the reseource 
-    tokens = re.split("_|\.", date_string) #for slpling the date from the given filde 
-    #2017-01-12>>token[0] _ 2017-01-20>>token[1]
-
-    date1 = datetime.strptime(tokens[0], date_format) #left side of the split is store in tokens[0]
-    # example of datetime.stritime >>>date_string = "21 June, 2018" 
-    #>>date_object = datetime.strptime(date_string, "%d %B,%Y")
-    #>>date_object = 2018-06-21 in this the date formeting deff
-    date2 = datetime.strptime(tokens[1], date_format) # right side of the split  
-    delta_days = np.abs((date2 - date1).days) # just find out the absulute deff between the dates 
+    # ^ this function find out the basic difference between the date from file name
+    date_format = "%Y%m%d"  # This is the main format of the date 
+    tokens = re.split("_|\.", date_string)
+            # date_string is the image name
+            # date_string will be splitted by _ |(or) \
+            # ! e.g. file name  = 20170112_20170120
+            # ^ token[0] = 2017-01-12 _ token[1] = 2017-01-20
+            # left side of the split is store in tokens[0]
+    date1 = datetime.strptime(tokens[0], date_format) 
+    date2 = datetime.strptime(tokens[1], date_format) 
+            # datetime.stritime() saves tokens in the given date_format  
+    delta_days = np.abs((date2 - date1).days) 
+            # find out the absolute difference values in days 
     return delta_days
 
 
@@ -34,7 +39,7 @@ class SpatialTemporalDataset(Dataset):#inharit the dataset class
                  bperp_ext,
                  coh_dir,
                  coh_ext,
-                 conv1,
+                 conv1, 
                  conv2,
                  width,
                  height,
@@ -71,6 +76,8 @@ class SpatialTemporalDataset(Dataset):#inharit the dataset class
 
             # read bperp
             self.bperps[idx] = data_reader.readBin(bperp_path, 1, 'float')[0][0]
+            print(self.bperps)
+            # breakpoint()
         print('bp dday loaded')
 
         self.all_sample_coords = [(row_idx, col_idx)
@@ -90,10 +97,9 @@ class SpatialTemporalDataset(Dataset):#inharit the dataset class
 
     def __getitem__(self, idx):
         coord = self.all_sample_coords[idx]
-
+    # ! print (coord)
         mr_target = data_reader.readBin(self.ref_mr_path, self.width, 'float', crop=(coord[0], coord[1], self.patch_size, self.patch_size))
-
-
+    # ! crop function mainly crop from the crood coordinator like (x,y) = (904,532) and crop patch_size * patch_size
         he_target = data_reader.readBin(self.ref_he_path, self.width, 'float', crop=(coord[0], coord[1], self.patch_size, self.patch_size))
 
         filt_input = np.zeros([self.stack_size, self.patch_size, self.patch_size])    # [N, h ,w] for a single training sample, 
@@ -107,19 +113,21 @@ class SpatialTemporalDataset(Dataset):#inharit the dataset class
             coh_input[i] = data_reader.readBin(self.coh_paths[i], self.width, 'float', crop=(coord[0], coord[1], self.patch_size, self.patch_size))
 
             
-
         return {
-            'input': filt_input,    
-            'coh': coh_input,
+            'input': filt_input, #3D data   
+            'coh': coh_input, #feature 3D
             'mr': np.expand_dims(mr_target, 0),
-            'he': np.expand_dims(he_target, 0),
-            'ddays':
+                # label expand dims is used for convert the array in matrix
+                # axis = 0 means increase in column, axis = 1 means increase in row
+            # 'mr': np.array(mr_target),
+            # 'mr': mr_target,
+            'he': np.expand_dims(he_target, 0), # same as mr
+            'ddays': # feature single value
                 self.
                 ddays,    # ddays and bperps are shared for all training samples in a stack, it can be used in a more effecient way, here is just an example
             'bperps':
-                self.bperps    # 
+                self.bperps    #feature single value 
         }
-
 
 if __name__ == "__main__":
 
@@ -145,16 +153,21 @@ if __name__ == "__main__":
     ref_he_path = '/mnt/hdd1/3vG_data/3vg_parameter_fitting_data/miami.tsx.sm_dsc.740.304.1500.1500/fit_hr/hgt_fit_m'
 
     sample_db = SpatialTemporalDataset(sample_filt_dir, sample_filt_ext, sample_bperp_dir, sample_bperp_ext, sample_coh_dir, sample_coh_ext, sample_conv1, sample_conv2, sample_width, sample_height,ref_mr_path, ref_he_path, sample_patch_size, sample_stride)
-
+    # print(sample_db['mr'])
+    # print('mr')
     print('db length {}'.format(len(sample_db)))
 
     sample_dataloader = DataLoader(sample_db, 4, shuffle=True, num_workers=4)
+    print(type(sample_dataloader))
 
     for batch_idx, batch in enumerate(sample_dataloader):
         print(batch_idx)
         print(batch['input'].shape)
+        # print(batch('input'))
         print(batch['coh'].shape)
         print(batch['mr'].shape)
+        print(batch['mr'])
+        print(batch['mr'].ndim)
         print(batch['he'].shape)
         print(batch['ddays'].shape)
         print(batch['bperps'].shape)
@@ -175,18 +188,9 @@ if __name__ == "__main__":
     # def wrap(phase):
     #     return np.angle(np.exp(1j * phase))
 
-
     # def recon_phase(self, mr, he, conv1, conv2, ddays):
     #     return self.ddays * self.conv1 * mr + self.bperps * self.conv2 * he
 
-
-    # recon_ifg = recon_phase(ref_mr_path, ref_he_path, sample_conv1, sample_conv2, 'ddays')
-    # print (recon_ifg)
-
-# recon(mr,he,conv1,conv2,ddays)
-
-# recon_ifg = recon(mr,he,conv1,conv2,ddays)
-
-# filter_ifg
+    # recon_phase = self.recon_phase(ref_mr_path, ref_he_path, sample_conv1, sample_conv2, 'ddays')
 
     # np.angle(1*np.exp(filter_ifg_phase-wrap(recon_ifg_ifg)))
