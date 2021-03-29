@@ -2,7 +2,7 @@ defaults:
   - model: new_cnn
   - data: mrcg1_real_single
 pl_trainer:
-  gpus: '2'
+  gpus: 0
   max_epochs: 1
   # fast_dev_run: True
   val_check_interval: 300

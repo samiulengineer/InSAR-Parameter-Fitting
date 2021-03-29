@@ -178,7 +178,7 @@ class DnCNN(DummyCNN):
 
 
 class NewCnn(pl.LightningModule):
-
+    
     def __init__(self,
                  in_channels=1,
                  lr=1e-3,
@@ -207,8 +207,9 @@ class NewCnn(pl.LightningModule):
         self.conv7 = nn.Conv2d(
             in_channels=64, out_channels=64, kernel_size=kernel_size, padding=padding)
         self.conv8 = nn.Conv2d(
-            in_channels=64, out_channels=1,  kernel_size=kernel_size, padding=padding)
-        self.conv_concat = nn.Conv2d(
+            in_channels=64, out_channels=2,  kernel_size=kernel_size, padding=padding)
+
+        self.cnn = nn.Conv2d(
             in_channels=4, out_channels=1, kernel_size=3, padding=1)
 
         self.bn1 = nn.BatchNorm2d(64)
@@ -218,21 +219,8 @@ class NewCnn(pl.LightningModule):
         self.bn5 = nn.BatchNorm2d(64)
         self.bn6 = nn.BatchNorm2d(64)
 
-        ''' flattening '''
-
-        self.cln1 = nn.Linear(4 * 28 * 28, 16)
-        self.batchnorm = nn.BatchNorm1d(16)
-        self.dropout = nn.Dropout2d(0.5)
-        self.cln2 = nn.Linear(16, 8)
-
-        ''' ddays + bperps in linear layer '''
-
-        self.ln1 = nn.Linear(135, 64)
-        self.ln2 = nn.Linear(64, 4)
-
-        ''' concat layer '''
-
-        self.ln_concat = nn.Linear(16, 2)
+        # call ultimate weigth init
+        self.apply(weight_init)
 
     def forward(self, filt_ifg_phase, coh, ddays, bperps):  # forward propagation
         # def forward(self, ddays, bperps):  # forward propagation
@@ -260,31 +248,37 @@ class NewCnn(pl.LightningModule):
 
         concat_phase_coh = F.relu(torch.cat((filt_ifg_phase, coh), dim=1))
 
-        concat_phase_coh_flatten = concat_phase_coh.reshape(
-            concat_phase_coh.shape[0], -1)
+        cnn_concat_phase_coh = F.relu(self.cnn(concat_phase_coh))
 
-        flattenL1 = F.relu(self.cln1(concat_phase_coh_flatten))
-        flattenL2 = F.relu(self.cln2(flattenL1))
+        ddays = torch.reshape(ddays, [B, N, 1, 1]) * torch.ones([B, N, H, W])
+        bperps = torch.reshape(bperps, [B, N, 1, 1]) * torch.ones([B, N, H, W])
 
-        print('flattenL2 shape: {}' .format(flattenL2.shape))
+        ddays = F.relu(self.conv1(ddays))
+        ddays = F.relu(self.bn1(self.conv2(ddays)))
+        ddays = F.relu(self.bn2(self.conv3(ddays)))
+        ddays = F.relu(self.bn3(self.conv4(ddays)))
+        ddays = F.relu(self.bn4(self.conv5(ddays)))
+        ddays = F.relu(self.bn5(self.conv6(ddays)))
+        ddays = F.relu(self.bn6(self.conv7(ddays)))
+        ddays = self.conv8(ddays)
 
-        ''' ------------ ddays + bperps ------------- '''
-
-        ddays = F.relu(self.ln1(ddays))
-        ddays = F.relu(self.ln2(ddays))
-
-        bperps = F.relu(self.ln1(bperps))
-        bperps = F.relu(self. ln2(bperps))
+        bperps = F.relu(self.conv1(bperps))
+        bperps = F.relu(self.bn1(self.conv2(bperps)))
+        bperps = F.relu(self.bn2(self.conv3(bperps)))
+        bperps = F.relu(self.bn3(self.conv4(bperps)))
+        bperps = F.relu(self.bn4(self.conv5(bperps)))
+        bperps = F.relu(self.bn5(self.conv6(bperps)))
+        bperps = F.relu(self.bn6(self.conv7(bperps)))
+        bperps = self.conv8(bperps)
 
         concat_ddays_bperps = F.relu(torch.cat((ddays, bperps), dim=1))
 
-        all_concat = F.relu(torch.cat((flattenL2, concat_ddays_bperps), dim=1))
+        cnn_concat_ddays_bperps = F.relu(self.cnn(concat_ddays_bperps))
 
-        last_layer_ddays_bperp_all = F.relu(self.ln_concat(all_concat))
+        concat_all = F.relu(
+            torch.cat((cnn_concat_phase_coh, cnn_concat_ddays_bperps), dim=1))
 
-        r = torch.reshape(last_layer_ddays_bperp_all, [B, 2, 1, 1])
-
-        return r
+        return concat_all
 
     def training_step(self, batch, batch_idx):
         # demo purpose, and our input batch are noisy signals
@@ -299,7 +293,8 @@ class NewCnn(pl.LightningModule):
         conv2 = batch['conv2']  # [B]
         ref_out = torch.cat([mr, he], 1)  # [B, 2, H, W]
 
-        out = self.forward(filt_ifg_phase, coh, ddays, bperps)  # [B, 2, 1, 1] prediction
+        out = self.forward(filt_ifg_phase, coh, ddays,
+                           bperps)  # [B, 2, 1, 1] prediction
 
         # there are two types of baseline losses but they may not work
 
