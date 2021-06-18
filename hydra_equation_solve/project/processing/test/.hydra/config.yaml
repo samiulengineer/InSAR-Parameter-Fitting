@@ -1,0 +1,19 @@
+pl_trainer:
+  gpus: '3'
+seed: 1234
+processing_dir: ./processing/test
+checkpoint_path: /processing/train/lightning_logs/version_0/checkpoints/epoch=25-step=2599.ckpt
+model:
+  _target_: model.equation_solve.EqModel12
+  lr: 0.0003
+  channels: 1
+  loss_type: ri-mse
+data:
+  _target_: data.equation_datamodule.EqnDataLoader
+  test_batch_size: 4
+  test_num_workers: 4
+  train: false
+  high_limit: 100
+  low_limit: -100
+  stack_size: 500
+  experiment: 2

@@ -1,0 +1,5 @@
+# @package _group_
+_target_: model.equation_solve.EqModel   
+lr: 3e-4                    
+channels: 3                    
+loss_type: 'ri-mse'         

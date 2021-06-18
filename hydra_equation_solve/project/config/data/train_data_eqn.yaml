@@ -1,0 +1,11 @@
+# @package _group_
+_target_: data.equation_datamodule.EqnDataLoader
+train_batch_size: 4 
+val_batch_size: 4 
+train_num_workers: 4
+val_num_workers: 4
+train: True 
+experiment: 3
+high_limit: 100
+low_limit : -100
+stack_size: 500
