@@ -1,0 +1,5 @@
+# @package _group_
+_target_: model.equation_solve.EqModel12   
+lr: 3e-4                    
+channels: 1                    
+loss_type: 'avg_x1_error'         
