@@ -1,3 +1,0 @@
-- model=eqnmodel12
-- data.experiment=2
-- checkpoint_path=/processing/train/lightning_logs/version_0/checkpoints/epoch\=25-step\=2599.ckpt
