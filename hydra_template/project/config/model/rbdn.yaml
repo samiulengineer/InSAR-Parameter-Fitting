@@ -1,7 +1,0 @@
-# @package _group_
-_target_: model.models.RBDN
-name: rbdn
-in_channels: 135
-lr: 1e-3
-loss_type: ri-mse
-num_of_layers: 17
