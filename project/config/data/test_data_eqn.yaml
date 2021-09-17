@@ -1,0 +1,8 @@
+# @package _group_
+_target_: data.rosenbrok_dataloader.EqnDataLoader
+test_batch_size: 4
+test_num_workers: 4
+train: False
+high_limit: 10
+low_limit : -10
+stack_size: 500

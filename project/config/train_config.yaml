@@ -1,0 +1,20 @@
+# find more about defaul value in https://hydra.cc/docs/tutorials/basic/your_first_app/defaults
+# find structure about yaml file https://www.youtube.com/watch?v=cdLNKUoMc6c
+# definig the defaults . Default values are run automatacily if we don't pass any argrument in command line
+
+
+defaults:                    # class/object/ list name (mainly in this section this is a spacial variable that contain list of 2 value model and data )                                                          
+  - model: eqmodel           # list value - containing the cfg.model(config/model) which is a folder pointing toword eqmodel.ymal(hryda allow to accaess a folder but basic yaml don't allow folder)                                               
+  - data: train_data_eqn     # list value - containing the cfg.data(config/data) which is a folder pointing toword eqmodel.ymal
+                                                
+
+pl_trainer:
+  max_epochs: 10               # class variable                                                                                                              
+  gpus: "3"                      # class variable                                                    
+  val_check_interval: 2      # class variable                           
+  limit_val_batches: 5          # class variable
+seed: 1234                                                                          
+processing_dir: './processing/train'
+hydra:
+  run:
+    dir: ${processing_dir}                                                        
