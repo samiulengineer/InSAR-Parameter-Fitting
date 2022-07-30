@@ -21,17 +21,17 @@ tf.config.optimizer.set_jit("True")
 # Parsing variable
 # ----------------------------------------------------------------------------------------------
 
-# parser = argparse.ArgumentParser()
-# parser.add_argument("--root_dir")
-# parser.add_argument("--dataset_dir")
-# parser.add_argument("--model_name")
-# parser.add_argument("--epochs")
-# parser.add_argument("--batch_size")
-# parser.add_argument("--index")
-# parser.add_argument("--experiment")
-# parser.add_argument("--patchify")
-# parser.add_argument("--patch_size")
-# parser.add_argument("--weights")
+parser = argparse.ArgumentParser()
+parser.add_argument("--root_dir")
+parser.add_argument("--dataset_dir")
+parser.add_argument("--model_name")
+parser.add_argument("--epochs")
+parser.add_argument("--batch_size")
+parser.add_argument("--index")
+parser.add_argument("--experiment")
+parser.add_argument("--patchify")
+parser.add_argument("--patch_size")
+parser.add_argument("--weights")
 
 # args = parser.parse_args()
 
