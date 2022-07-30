@@ -1,0 +1,60 @@
+# Image Input/Output
+# ----------------------------------------------------------------------------------------------
+in_channels : 3
+num_classes : 2
+
+
+# Training
+# ----------------------------------------------------------------------------------------------
+# unet/mod-unet/dncnn/u2net/vnet/unet++
+model_name : rbdn
+batch_size : 8
+epochs : 2000
+learning_rate : !!float 3e-4
+val_plot_epoch : 30
+augment : True
+transfer_lr : False
+gpu : !!str 2
+
+# Regular/Cls_balance/Patchify/Patchify_WOC
+experiment : patch_256
+
+# Patchify
+# ----------------------------------------------------------------------------------------------
+patchify : False
+patch_class_balance : False # whether to use class balance while doing patchify
+patch_size : 256 # height = width, anyone is suitable
+stride : 64
+p_train_dir : train_patch_256.json
+p_valid_dir : valid_patch_256.json
+p_test_dir : test_patch_256.json
+
+# Dataset
+# ----------------------------------------------------------------------------------------------
+weights : True
+balance_weights : [0.14, 0.86]
+dataset_dir : /mnt/hdd1/3vG_data/3vg_parameter_fitting_data/
+root_dir : /home/mdsamiul/github_project/parameter_fitting
+train_size : 0.8  # validation 10% and test 10%
+train_dir : train.csv
+valid_dir : valid.csv
+test_dir : test.csv
+
+# Logger/Callbacks
+# ----------------------------------------------------------------------------------------------
+csv : True
+val_pred_plot : True
+lr : True
+tensorboard : True
+early_stop : False
+checkpoint : False
+patience : 300 # required for early_stopping, if accuracy does not change for 500 epochs, model will stop automatically
+
+# Evaluation
+# ----------------------------------------------------------------------------------------------
+load_model_name : unet_ex_patchify_epochs_100_05-May-22.hdf5
+load_model_dir : None  # if by default model directory change. Then change it here
+
+
+plot_single : True # if True, then only index x_test image will plot
+index : -1 # by default -1 means random image else specific index image provide by user
