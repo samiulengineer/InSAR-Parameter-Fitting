@@ -1,0 +1,12 @@
+defaults:
+  - model: poc_fc
+  - data: poc_pf
+pl_trainer:
+  max_epochs: 10000
+  gpus: "3"
+  check_val_every_n_epoch: 1
+seed: 1234
+processing_dir: './processing/train'
+hydra:
+  run:
+    dir: ${processing_dir}

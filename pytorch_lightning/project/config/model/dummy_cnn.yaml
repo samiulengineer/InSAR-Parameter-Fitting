@@ -1,0 +1,6 @@
+# @package _group_
+_target_: model.models.DummyCNN
+name: dummy_cnn
+in_channels: 135
+lr: 1e-3
+loss_type: mse
