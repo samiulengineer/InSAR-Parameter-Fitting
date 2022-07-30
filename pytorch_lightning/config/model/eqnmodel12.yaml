@@ -1,8 +1,0 @@
-# @package _group_
-_target_: model.equation_solve.EqModel12   # __target__ is a one of the spacial feature of hydra .. That allow user to call any class and also run any function 
-                                          #model= is the folder name , equation_solve = is the file name , EqModel12 =is the class name 
-
-lr: 3e-4          # Learning rate          
-channels: 1         # input channels
-# loss_type: 'avg_x1_error'         # Loss type. now we consider many loss functions so we dont fix any loss specifically
-

@@ -1,8 +1,0 @@
-# @package _group_
-_target_: data.rosenbrok_dataloader.EqnDataLoader
-train_batch_size: 4 
-val_batch_size: 4 
-train_num_workers: 4
-val_num_workers: 4
-train: True 
-
